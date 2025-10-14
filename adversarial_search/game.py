@@ -40,29 +40,63 @@ class Mankala(TwoPlayerGame):
         Returns:
             None
         """
-        RED = '\033[31m'
-        RESET = '\033[0m'
+        COLOR_RED = '\033[31m'
+        COLOR_WHITE = '\033[0m'
+
+        NUMBER_OF_HOLES = 12
+        STARTING_SEEDS_IN_HOLE = 4
 
         STARTING_SCORE = 0
         WINNING_SCORE = 24
         STARTING_PLAYER = 1
 
+        self.board = NUMBER_OF_HOLES * [STARTING_SEEDS_IN_HOLE]
+
         for numberOfPlayers, player in enumerate(players):
-            player.score = STARTING_SCORE
             player.isstarved = False
             player.camp = numberOfPlayers
+            player.score = STARTING_SCORE
         self.players = players
         
-        self.board = [4, 4, 4, 4, 4, 4,  
-                      4, 4, 4, 4, 4, 4]
         
         if(len(self.board) % 2 != 0):
-            print(f"\n{RED}Board size has to be even. Aborting{RESET}\n")
+            print(f"\n{COLOR_RED}Board size has to be even. Aborting{COLOR_WHITE}\n")
             return
                       
         self.current_player = STARTING_PLAYER
         self.winning_score = WINNING_SCORE
         
+
+    def possible_moves(self):
+        """
+        Check for possible moves for the current player.
+        
+        Returns a list of valid moves (holes) that the current player can play.
+        If no valid moves are available, returns ['None'].
+        Any non-empty hole can be played.
+        Returns:
+            list: List of valid moves as strings ('a'-'l') or ['None']
+            if no moves are available
+
+        Side Effects:
+            - None
+        Note: The current player is determined by self.current_player
+        which is either 1 or 2, representing the two players.
+        """
+        def holes_are_empty(board):
+            return max(board) == 0
+        
+        if self.current_player == 1:
+            row = self.board[:6]
+            player_indices = range(6)
+        else:
+            row = self.board[6:]
+            player_indices = range(6, 12)
+
+        if holes_are_empty(row): return ['None']
+        possible_moves = [i for i in player_indices if self.board[i] != 0]
+
+        return ['abcdefghijkl'[u] for u in possible_moves]
 
     def make_move(self, move):
         """
@@ -87,18 +121,25 @@ class Mankala(TwoPlayerGame):
         def hole_in_enemy_row(hole):
             return (hole // 6) == self.opponent.camp
     
-        def hole_has_proper_seeds(hole):
+        def hole_has_required_seeds(hole):
             return self.board[hole] in [2, 3]
 
         def distribute_seeds(starting_hole):
-            stones_to_distribute = self, board
-            for i in range(self.board[starting_hole]):
+            seeds_to_sow = self.board[starting_hole]
+            self.board[starting_hole] = 0
+            hole_index = starting_hole
+
+            for _ in range(seeds_to_sow):
                 hole_index = (hole_index + 1) % 12
                 if hole_index == starting_hole:
-                    continue
+                    hole_index = (hole_index + 1) % 12
                 self.board[hole_index] += 1
 
-            self.board[starting_hole] = 0
+            return hole_index
+        
+        def add_seeds_to_score(hole_index):
+            self.player.score += self.board[hole_index]
+            self.board[hole_index] = 0
 
         if move == "None":
             self.player.isstarved = True
@@ -108,58 +149,34 @@ class Mankala(TwoPlayerGame):
 
         starting_hole = 'abcdefghijkl'.index(move)
 
-        hole_index = starting_hole
-        for i in range(self.board[starting_hole]):
-            hole_index = (hole_index + 1) % 12
-            if hole_index == starting_hole:
-                continue
-            self.board[hole_index] += 1
-
-        self.board[starting_hole] = 0
+        last_hole_index = distribute_seeds(starting_hole)
+        current_capture_hole = last_hole_index
         
+        while (hole_in_enemy_row(current_capture_hole) and hole_has_required_seeds(current_capture_hole)):
+            add_seeds_to_score(current_capture_hole)
+            current_capture_hole = (current_capture_hole - 1) % 12
 
-        while (hole_in_enemy_row(hole_index)
-               and hole_has_proper_seeds(hole_index)):
-            self.player.score += self.board[hole_index]
-            self.board[hole_index] = 0
-            hole_index = (hole_index - 1) % 12
+        #now is_over() is invoked
     
-    def possible_moves(self):
+    def is_over(self):
         """
-        Check for possible moves for the current player.
+        Determine if the game has ended.
         
-        Returns a list of valid moves (holes) that the current player can play.
-        If no valid moves are available, returns ['None'].
-        If no hole has this many seeds, any non-empty hole can be played.
+        The game ends if:
+        1. A player has lost (opponent has 25+ seeds).
+        2. The total seeds on the board is too low (fewer than 7 seeds).
+        3. The opponent is starved (cannot make a move, signaled by isstarved flag).
+        
         Returns:
-            list: List of valid moves as strings ('a'-'l') or ['None']
-            if no moves are available
-
-        Side Effects:
-            - None
-        Note: The current player is determined by self.current_player
-        which is either 1 or 2, representing the two players.
+            bool: True if the game is over, False otherwise.
         """
-        def board_is_empty(board):
-            return max(board) == 0
-        
-        first_row = self.board[:6]
-        second_row = self.board[6:]
-        
-        row_values = first_row if self.current_player == 1 else second_row
-        player_indices = range(6) if self.current_player == 1 else range(6, 12)
-
-        if board_is_empty(row_values): return ['None']
-        possible_moves = [i for i in player_indices if self.board[i] != 0]
-
-        return ['abcdefghijkl'[u] for u in possible_moves]
+        return ( self.lose() or
+                  sum(self.board) < 7 or
+                  self.opponent.isstarved )
 
     def show(self):
         """
-        Display the current game state to the console.
-        Prints the board layout and player scores in a human-readable format.
-        Side Effects:
-            - Outputs to the console
+        Display the current game state to the console using the external show_board function in interface.py.
         """
         show_board(self)
 
@@ -172,17 +189,7 @@ class Mankala(TwoPlayerGame):
         """
         return self.opponent.score > self.winning_score
 
-    def is_over(self):
-        """
-        Determine if the game has ended.
-        The game ends if a player has lost, there are fewer than 7 seeds
-        left on the board, or if the opponent is starved (cannot move).
-        Returns:
-            bool: True if the game is over, False otherwise
-        """
-        return ( self.lose() or
-                  sum(self.board) < 7 or
-                  self.opponent.isstarved )
+
 
 
 if __name__ == "__main__":
@@ -190,14 +197,18 @@ if __name__ == "__main__":
 
     scoring = lambda game: game.player.score - game.opponent.score
     ai = Negamax(8, scoring)
-    ai_2 = Negamax(6, scoring)
-    game = Mankala([Human_Player(), AI_Player(ai_2)])
+    ai_2 = Negamax(2, scoring)
+    # game = Mankala([Human_Player(), AI_Player(ai_2)])
+    game = Mankala([AI_Player(ai), AI_Player(ai_2)])
+
 
     game.play()
 
-    if game.players[0].score > game.players[1].score:
-        print("Player 1 wins with a score of %d." % game.players[0].score)
-    elif game.players[0].score < game.players[1].score:
-        print("Player 2 wins with a score of %d." % game.players[1].score)
-    else:
-        print("Draw.")
+score1 = game.players[0].score
+score2 = game.players[1].score
+
+if score1 == score2:
+    print("Draw.")
+else:
+    winner_idx, winning_score = (0, score1) if score1 > score2 else (1, score2)
+    print(f"Player {winner_idx + 1} wins with a score of {winning_score}.")
