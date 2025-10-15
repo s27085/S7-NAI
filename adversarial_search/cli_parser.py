@@ -2,6 +2,37 @@ import argparse
 from constants import GameConstants, PlaygroundConstants
 
 def handle_arguments():
+    """
+    Parses command-line arguments provided by the user and updates the
+    global GameConstants and PlaygroundConstants classes accordingly.
+
+    This function configures the game's rules (via GameConstants) and 
+    the player settings (via PlaygroundConstants, determining Human/AI
+    status and AI search depth).
+
+    usage: game.py [options] p1 p2
+
+    positional arguments:
+    p1 {ai,human}         type of an agent
+    p2 {ai,human}         type of an agent
+
+    options:
+    -h, --help            show this help message and exit
+    -n SEEDS, --seeds SEEDS
+                            number of seeds in holes at the beggining
+    -ss STARTING_SCORE, --starting-score STARTING_SCORE
+                            score that each player starts with
+    -ph PLAYER_HOLES, --player-holes PLAYER_HOLES
+                            number of holes each player has
+    -ws WINNING_SCORE, --winning-score WINNING_SCORE
+                            a score that players aim to achieve
+    -a1 A1                difficulty of ai1, if applicable
+    -a2 A2                difficulty of ai2, if applicable
+    
+    Side Effects:
+        Modifies attributes of GameConstants and PlaygroundConstants in place.
+    """
+        
     parser = argparse.ArgumentParser(
         prog = 'Mankala (easyAI implementation)',
         epilog = 'Enjoy your game!',
@@ -32,8 +63,6 @@ def handle_arguments():
     PlaygroundConstants.AI_2_DEPTH = args.a2
     PlaygroundConstants.IS_HUMAN_PLAYER_1 = True if args.p1 == 'human' else False
     PlaygroundConstants.IS_HUMAN_PLAYER_2 = True if args.p2 == 'human' else False
-    print(f'Player 1 is human in parser: {PlaygroundConstants.IS_HUMAN_PLAYER_1}')
-    print(f'Player 2 is human in parser: {PlaygroundConstants.IS_HUMAN_PLAYER_2}')
 
     GameConstants.STARTING_SEEDS_IN_HOLE = args.seeds
     GameConstants.NUMBER_OF_HOLES_PER_PLAYER = args.player_holes

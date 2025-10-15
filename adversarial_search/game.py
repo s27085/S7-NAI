@@ -189,18 +189,14 @@ if __name__ == "__main__":
     from easyAI import Human_Player, AI_Player, Negamax
 
     handle_arguments()
-    print(f'COnst after arguments: {PlaygroundConstants.IS_HUMAN_PLAYER_1}')
 
     scoring = lambda game: game.player.score - game.opponent.score
     
     # Create players based on configuration
     player1 = (Human_Player() if PlaygroundConstants.IS_HUMAN_PLAYER_1 
                else AI_Player(Negamax(PlaygroundConstants.AI_1_DEPTH, scoring)))
-    print(f'{player1.name}')
     player2 = (Human_Player() if PlaygroundConstants.IS_HUMAN_PLAYER_2 
                else AI_Player(Negamax(PlaygroundConstants.AI_2_DEPTH, scoring)))
-    print(f'{player2.name}')
-    
     
     try:
         game = Mankala([player1, player2])
