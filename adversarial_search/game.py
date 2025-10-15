@@ -78,11 +78,11 @@ class Mankala(TwoPlayerGame):
         
         if(len(self.board) % 2 != 0):
             show_invalid_board_size()
-            return
-
-        if(GameConstants.NUMBER_OF_HOLES >= len(GameConstants.ALPHABET)):
+            raise ValueError("Board size must be even")
+        
+        if(GameConstants.NUMBER_OF_HOLES > len(GameConstants.ALPHABET)):
             show_maximum_board_size_exceeded()
-            return
+            raise ValueError(f"Board size ({GameConstants.NUMBER_OF_HOLES}) exceeds alphabet length ({len(GameConstants.ALPHABET)})")
 
         self.current_player = GameConstants.STARTING_PLAYER
         self.winning_score = GameConstants.WINNING_SCORE
@@ -238,14 +238,19 @@ if __name__ == "__main__":
     player2 = (Human_Player() if PlaygroundConstants.IS_HUMAN_PLAYER_2 
                else AI_Player(Negamax(PlaygroundConstants.AI_2_DEPTH, scoring)))
     
-    game = Mankala([player1, player2])
-    game.play()
+    try:
+        game = Mankala([player1, player2])
+        game.play()
+        
+        score1 = game.players[0].score
+        score2 = game.players[1].score
 
-score1 = game.players[0].score
-score2 = game.players[1].score
-
-if score1 == score2:
-    show_draw()
-else:
-    winner_idx, winning_score = (0, score1) if score1 > score2 else (1, score2)
-    show_winner(winner_idx, winning_score)
+        if score1 == score2:
+            show_draw()
+        else:
+            winner_idx, winning_score = (0, score1) if score1 > score2 else (1, score2)
+            show_winner(winner_idx, winning_score)
+            
+    except ValueError as e:
+        print(f"Game initialization failed: {e}")
+        print("Please check your game configuration.")
