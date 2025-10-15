@@ -1,5 +1,31 @@
 from easyAI import TwoPlayerGame
-from interface import show_board
+from interface import *
+
+class GameConstants:
+    """
+    Constants used in the Mankala game.
+
+    Attributes:
+        NUMBER_OF_HOLES_PER_PLAYER (int): Number of holes per player (6).
+        NUMBER_OF_HOLES (int): Total number of holes on the board (12).
+        STARTING_SEEDS_IN_HOLE (int): Initial number of seeds in each hole (4).
+        HOLE_POINTS_TO_CAPTURE (list): List of hole points that can be captured (2, 3).
+
+        STARTING_SCORE (int): Initial score for each player (0).
+        WINNING_SCORE (int): Score required to win the game (24).
+        STARTING_PLAYER (int): Index of the starting player (1).
+        ALPHABET (str): String of lowercase letters used for hole labeling and moves.
+    """
+    NUMBER_OF_HOLES_PER_PLAYER = 6
+    NUMBER_OF_HOLES = NUMBER_OF_HOLES_PER_PLAYER * 2
+    STARTING_SEEDS_IN_HOLE = 4
+    HOLE_POINTS_TO_CAPTURE = [2, 3]
+
+    STARTING_SCORE = 0
+    WINNING_SCORE = 24
+    STARTING_PLAYER = 1
+    ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
+
 
 class Mankala(TwoPlayerGame):
     """
@@ -23,7 +49,7 @@ class Mankala(TwoPlayerGame):
         - Players must "feed" their opponent if possible
         
         Attributes:
-            board (list): List of 12 integers representing seeds in each hole
+            board (list): List of 12 (GameConstants.NUMBER_OF_HOLES) integers representing seeds in each hole
             players (list): List of two Player objects
             current_player (int): Index of the current player (1 or 2)
         """
@@ -31,7 +57,7 @@ class Mankala(TwoPlayerGame):
         """
         Initialize a new Mankala game.
         
-        Sets up the game board with 4 seeds in each hole, initializes player
+        Sets up the game board with 4 (GameConstants.STARTING_SEEDS_IN_HOLE) seeds in each hole, initializes player
         attributes, and sets the starting player.
         
         Args:
@@ -40,32 +66,27 @@ class Mankala(TwoPlayerGame):
         Returns:
             None
         """
-        COLOR_RED = '\033[31m'
-        COLOR_WHITE = '\033[0m'
 
-        NUMBER_OF_HOLES = 12
-        STARTING_SEEDS_IN_HOLE = 4
+        self.board = GameConstants.NUMBER_OF_HOLES * [GameConstants.STARTING_SEEDS_IN_HOLE]
 
-        STARTING_SCORE = 0
-        WINNING_SCORE = 24
-        STARTING_PLAYER = 1
-
-        self.board = NUMBER_OF_HOLES * [STARTING_SEEDS_IN_HOLE]
-
-        for numberOfPlayers, player in enumerate(players):
+        for number_of_players, player in enumerate(players):
             player.isstarved = False
-            player.camp = numberOfPlayers
-            player.score = STARTING_SCORE
+            player.camp = number_of_players
+            player.score = GameConstants.STARTING_SCORE
         self.players = players
         
         
         if(len(self.board) % 2 != 0):
-            print(f"\n{COLOR_RED}Board size has to be even. Aborting{COLOR_WHITE}\n")
+            show_invalid_board_size()
             return
-                      
-        self.current_player = STARTING_PLAYER
-        self.winning_score = WINNING_SCORE
-        
+
+        if(GameConstants.NUMBER_OF_HOLES >= len(GameConstants.ALPHABET)):
+            show_maximum_board_size_exceeded()
+            return
+
+        self.current_player = GameConstants.STARTING_PLAYER
+        self.winning_score = GameConstants.WINNING_SCORE
+
 
     def possible_moves(self):
         """
@@ -87,16 +108,16 @@ class Mankala(TwoPlayerGame):
             return max(board) == 0
         
         if self.current_player == 1:
-            row = self.board[:6]
-            player_indices = range(6)
+            row = self.board[:GameConstants.NUMBER_OF_HOLES_PER_PLAYER]
+            player_indices = range(GameConstants.NUMBER_OF_HOLES_PER_PLAYER)
         else:
-            row = self.board[6:]
-            player_indices = range(6, 12)
+            row = self.board[GameConstants.NUMBER_OF_HOLES_PER_PLAYER:]
+            player_indices = range(GameConstants.NUMBER_OF_HOLES_PER_PLAYER, GameConstants.NUMBER_OF_HOLES)
 
         if holes_are_empty(row): return ['None']
         possible_moves = [i for i in player_indices if self.board[i] != 0]
 
-        return ['abcdefghijkl'[u] for u in possible_moves]
+        return [GameConstants.ALPHABET[u] for u in possible_moves]
 
     def make_move(self, move):
         """
@@ -119,10 +140,10 @@ class Mankala(TwoPlayerGame):
             - Sets player.isstarved flag if no moves available
         """
         def hole_in_enemy_row(hole):
-            return (hole // 6) == self.opponent.camp
+            return (hole // GameConstants.NUMBER_OF_HOLES_PER_PLAYER) == self.opponent.camp
     
         def hole_has_required_seeds(hole):
-            return self.board[hole] in [2, 3]
+            return self.board[hole] in GameConstants.HOLE_POINTS_TO_CAPTURE
 
         def distribute_seeds(starting_hole):
             seeds_to_sow = self.board[starting_hole]
@@ -130,9 +151,9 @@ class Mankala(TwoPlayerGame):
             hole_index = starting_hole
 
             for _ in range(seeds_to_sow):
-                hole_index = (hole_index + 1) % 12
+                hole_index = (hole_index + 1) % GameConstants.NUMBER_OF_HOLES
                 if hole_index == starting_hole:
-                    hole_index = (hole_index + 1) % 12
+                    hole_index = (hole_index + 1) % GameConstants.NUMBER_OF_HOLES
                 self.board[hole_index] += 1
 
             return hole_index
@@ -143,18 +164,18 @@ class Mankala(TwoPlayerGame):
 
         if move == "None":
             self.player.isstarved = True
-            starting_hole_to_count_seeds = 6 * self.opponent.camp
-            self.player.score += sum(self.board[starting_hole_to_count_seeds:starting_hole_to_count_seeds + 6])
+            starting_hole_to_count_seeds = GameConstants.NUMBER_OF_HOLES_PER_PLAYER * self.opponent.camp
+            self.player.score += sum(self.board[starting_hole_to_count_seeds:starting_hole_to_count_seeds + GameConstants.NUMBER_OF_HOLES_PER_PLAYER])
             return
 
-        starting_hole = 'abcdefghijkl'.index(move)
+        starting_hole = GameConstants.ALPHABET.index(move)
 
         last_hole_index = distribute_seeds(starting_hole)
         current_capture_hole = last_hole_index
         
         while (hole_in_enemy_row(current_capture_hole) and hole_has_required_seeds(current_capture_hole)):
             add_seeds_to_score(current_capture_hole)
-            current_capture_hole = (current_capture_hole - 1) % 12
+            current_capture_hole = (current_capture_hole - 1) % GameConstants.NUMBER_OF_HOLES
 
         #now is_over() is invoked
     
@@ -178,7 +199,7 @@ class Mankala(TwoPlayerGame):
         """
         Display the current game state to the console using the external show_board function in interface.py.
         """
-        show_board(self)
+        show_board(self, GameConstants.NUMBER_OF_HOLES_PER_PLAYER, GameConstants.ALPHABET)
 
     def lose(self):
         """
@@ -191,24 +212,40 @@ class Mankala(TwoPlayerGame):
 
 
 
+class PlaygroundConstants:
+    """
+    Constants for setting up the playground
+    Attributes:
+        AI_1_DEPTH (int): Search depth for AI player 1
+        AI_2_DEPTH (int): Search depth for AI player 2
+        IS_HUMAN_PLAYER_1 (bool): True if player 1 is human, False if AI.
+        IS_HUMAN_PLAYER_2 (bool): True if player 2 is human, False if AI.
+    """
+    AI_1_DEPTH = 6
+    AI_2_DEPTH = 2
+    IS_HUMAN_PLAYER_1 = False
+    IS_HUMAN_PLAYER_2 = False
+
 
 if __name__ == "__main__":
     from easyAI import Human_Player, AI_Player, Negamax
 
     scoring = lambda game: game.player.score - game.opponent.score
-    ai = Negamax(8, scoring)
-    ai_2 = Negamax(2, scoring)
-    # game = Mankala([Human_Player(), AI_Player(ai_2)])
-    game = Mankala([AI_Player(ai), AI_Player(ai_2)])
-
-
+    
+    # Create players based on configuration
+    player1 = (Human_Player() if PlaygroundConstants.IS_HUMAN_PLAYER_1 
+               else AI_Player(Negamax(PlaygroundConstants.AI_1_DEPTH, scoring)))
+    player2 = (Human_Player() if PlaygroundConstants.IS_HUMAN_PLAYER_2 
+               else AI_Player(Negamax(PlaygroundConstants.AI_2_DEPTH, scoring)))
+    
+    game = Mankala([player1, player2])
     game.play()
 
 score1 = game.players[0].score
 score2 = game.players[1].score
 
 if score1 == score2:
-    print("Draw.")
+    show_draw()
 else:
     winner_idx, winning_score = (0, score1) if score1 > score2 else (1, score2)
-    print(f"Player {winner_idx + 1} wins with a score of {winning_score}.")
+    show_winner(winner_idx, winning_score)
