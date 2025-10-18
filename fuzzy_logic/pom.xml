@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>pl.pjatk</groupId>
-	<artifactId>fuzz_logic</artifactId>
+	<artifactId>fuzzy_logic</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>fuzz_logic</name>
-	<description>fuzz_logic</description>
+	<name>fuzzy_logic</name>
+	<description>fuzzy_logic for NAI</description>
 	<url/>
 	<licenses>
 		<license/>
