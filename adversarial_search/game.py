@@ -3,7 +3,12 @@ from interface import *
 from cli_parser import handle_arguments
 from constants import *
 
+#Authors:
+# - Fabian Fetter
+# - Konrad Fijałkowski
 
+#Script can be run from cli with command parameters or without them, by defining game constant values in constants.py.
+#Please regard script -h parameter for more information.
 
 
 class Mankala(TwoPlayerGame):
