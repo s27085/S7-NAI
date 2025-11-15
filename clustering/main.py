@@ -2,12 +2,16 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.decomposition import TruncatedSVD
 import matplotlib.pyplot as plt
+from sklearn_extra.cluster import KMedoids
+from scipy.spatial.distance import pdist, squareform
 
 #Objective: Implement a movie recommendation system using K-means clustering.
 #Authors: Fabian Fetter, Konrad Fijałkowski
 #How to run: Ensure you have 'ratings.csv' in the same directory. Run the script and input the user number when prompted.
 
+UNSEEN_RATING = 0
 
 def extract_ratings(filename):
     try:
@@ -40,11 +44,13 @@ def extract_ratings(filename):
         print(f"Filename was not specified")
         return []
     
+def get_user_rating_of_title(ratings, user, title):
+    return ratings.get(user, {}).get(title, UNSEEN_RATING)
 
 def get_user_matrix(ratings, users, all_titles):
     user_vectors = []
     for user in users:
-        vector = [ratings[user].get(title, 0) for title in all_titles]
+        vector = [get_user_rating_of_title(ratings, user, title) for title in all_titles]
         user_vectors.append(vector)
     return np.array(user_vectors)
 
@@ -71,22 +77,31 @@ def visualize_clusters(matrix, labels, users):
     plt.show()
 
 
-def get_recommendations_kmeans(ratings, users, titles, target_user, k=3, n_recommendations=5):
+def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_clusters=4, n_recommendations=5):
     
-    kmeans = KMeans(n_clusters=k, random_state=69, n_init=10)
     matrix = get_user_matrix(ratings, users, titles)
-    labels = kmeans.fit_predict(matrix)
+    
+    pearson_distances = pdist(matrix, metric='correlation')
+    distance_matrix = squareform(pearson_distances) 
+
+    # 3. Clustering with K-Medoids using the pre-computed distance matrix
+    # KMedoids must be told the matrix is pre-computed using metric='precomputed'
+    kmedoids = KMedoids(n_clusters=number_of_clusters, metric='precomputed', random_state=69)
+    labels = kmedoids.fit_predict(distance_matrix)
+
+    visualize_clusters(matrix, labels, users)
     
     target_index = users.index(target_user)
     target_cluster = labels[target_index]
     
     cluster_users = [users[i] for i, label in enumerate(labels) if label == target_cluster]
     
+    #get only movies that were rated by at least one user in the cluster
     cluster_matrix = matrix[[users.index(user) for user in cluster_users]]
     avg_cluster_ratings = cluster_matrix.mean(axis=0)
     user_vector = matrix[target_index]
 
-    unseen_titles_indices = [i for i, rating in enumerate(user_vector) if rating == 0]
+    unseen_titles_indices = [i for i, rating in enumerate(user_vector) if rating == UNSEEN_RATING]
 
     # Odrzucamy filmy, które nie były oceniane przez nikogo w klastrze
     avg_cluster_ratings = np.where(cluster_matrix.sum(axis=0) == 0, -1, avg_cluster_ratings)
@@ -94,7 +109,6 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, k=3, n_recom
     recs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i], reverse=True)[:n_recommendations]
     unrecs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i])[:n_recommendations]
 
-    visualize_clusters(matrix, labels, users)
     return ([ titles[i] for i in recs ], [ titles[i] for i in unrecs ])
 
 ratings = extract_ratings("ratings.csv")
@@ -103,17 +117,19 @@ users = list(ratings.keys())
 
 titles = sorted({title for user_ratings in ratings.values() for title in user_ratings})
 
+#print list of users wioth their names and indices
 for i in range(len(users)):
     print(f"#{i+1} {users[i]}")
 print(f"Dla którego użytkownika chcesz uzyskać rekomendacje? (1-{len(users)})")
 user_index = int(input()) - 1
+selected_user = users[user_index]
 
-recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, users[user_index])
+recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, selected_user)
 
-print(f"Rekomendowane tytuły dla użytkownika {users[user_index]}:")
+print(f"Rekomendowane tytuły dla użytkownika {selected_user}:")
 for title in recommended_titles:
     print(f"- {title}")
 
-print(f"Nierekomendowane tytuły dla użytkownika {users[user_index]}:")
+print(f"Nierekomendowane tytuły dla użytkownika {selected_user}:")
 for title in unrecommended_titles:
     print(f"- {title}")
