@@ -1,17 +1,45 @@
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.decomposition import TruncatedSVD
 import matplotlib.pyplot as plt
 from sklearn_extra.cluster import KMedoids
 from scipy.spatial.distance import pdist, squareform
 
+import os
+from dotenv import load_dotenv
+
+from google import genai
+from google.genai.types import GenerationConfig, Tool
+
 #Objective: Implement a movie recommendation system using K-means clustering.
 #Authors: Fabian Fetter, Konrad Fijałkowski
-#How to run: Ensure you have 'ratings.csv' in the same directory. Run the script and input the user number when prompted.
+#Requirements: place gemini api key in .env file as GEMINI_API_KEY, have ratings.csv in the same directory
+#How to run: Run the script and input the user number when prompted.
 
 UNSEEN_RATING = 0
+
+def get_gemini_summary(movie_title):
+    load_dotenv()
+    client = genai.Client() 
+
+    prompt = f"Provide a brief, 1-sentence plot summary for the movie {movie_title}."
+
+    try:
+        response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt
+            )
+        
+        prompt = (
+            f"for the movie '{movie_title}'. Start your response with the summary."
+        )
+        record = {
+                'title': movie_title,
+                'description': response.text.strip()
+            }
+        return record
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 def get_user_index(users):
 
@@ -109,7 +137,7 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_cl
     kmedoids = KMedoids(n_clusters=number_of_clusters, metric='precomputed', random_state=69)
     labels = kmedoids.fit_predict(distance_matrix)
 
-    visualize_clusters(matrix, labels, users)
+    # visualize_clusters(matrix, labels, users)
     
     target_index = users.index(target_user)
     target_cluster = labels[target_index]
@@ -136,6 +164,8 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_cl
 
 
 if __name__ == "__main__":
+    load_dotenv()
+
     ratings = extract_ratings("ratings.csv")
 
     users = list(ratings.keys())
@@ -146,10 +176,21 @@ if __name__ == "__main__":
 
     recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, selected_user)
 
-    print(f"Rekomendowane tytuły dla użytkownika {selected_user}:")
-    for title in recommended_titles:
-        print(f"- {title}")
+    recom_with_desc = []
+    unrecom_with_desc = []
 
-    print(f"Nierekomendowane tytuły dla użytkownika {selected_user}:")
-    for title in unrecommended_titles:
-        print(f"- {title}")
+    for movie in recommended_titles:
+        recom_with_desc.append(get_gemini_summary(movie))
+
+    for movie in unrecommended_titles:
+        unrecom_with_desc.append(get_gemini_summary(movie))
+
+    print(f"Rekomendowane tytuły dla użytkownika {selected_user}:\n")
+    for movie_record in recom_with_desc:
+        print(f"\nTitle: {movie_record['title']}")
+        print(f"Description: {movie_record['description']}")
+
+    print(f"\nNierekomendowane tytuły dla użytkownika {selected_user}:")
+    for movie_record in unrecom_with_desc:
+        print(f"\nTitle: {movie_record['title']}")
+        print(f"Description: {movie_record['description']}")
