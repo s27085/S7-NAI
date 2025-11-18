@@ -52,10 +52,10 @@ Get user index from input
 """
 def get_user_index(users):
 
-    print("Dostępni użytkownicy:")
+    print("Available users:")
     for i in range(len(users)):
         print(f"#{i+1} {users[i]}")
-    print(f"Dla którego użytkownika chcesz uzyskać rekomendacje? (1-{len(users)})")
+    print(f"For which user do you want to get recommendations? (1-{len(users)})")
 
     while True:
         try:
@@ -65,9 +65,9 @@ def get_user_index(users):
                 selected_user = users[user_index]
                 break
             else:
-                print(f"Niepoprawny numer. Wprowadź liczbę od 1 do {len(users)}.")
+                print(f"Invalid number. Please enter a number from 1 to {len(users)}.")
         except ValueError:
-            print("Niepoprawny format. Wprowadź numer.")
+            print("Invalid format. Please enter a number.")
     return selected_user
 
 """
@@ -136,10 +136,10 @@ def visualize_clusters(matrix, labels, users):
     for i, user in enumerate(users):
         plt.text(x[i] + 0.01, y[i] + 0.01, user, fontsize=9)
 
-    plt.title("Wizualizacja klastrów użytkowników (K-means + PCA)")
-    plt.xlabel("Wymiar 1 (PCA)")
-    plt.ylabel("Wymiar 2 (PCA)")
-    plt.colorbar(scatter, label="Klaster")
+    plt.title("User Clusters Visualization (K-Medoids + PCA)")
+    plt.xlabel("Dimension 1 (PCA)")
+    plt.ylabel("Dimension 2 (PCA)")
+    plt.colorbar(scatter, label="Cluster")
     plt.grid(True)
     plt.show()
 
@@ -207,12 +207,12 @@ if __name__ == "__main__":
     for movie in unrecommended_titles:
         unrecom_with_desc.append(get_gemini_summary(movie))
 
-    print(f"Rekomendowane tytuły dla użytkownika {selected_user}:\n")
+    print(f"Movies recommended for {selected_user}:\n")
     for movie_record in recom_with_desc:
         print(f"\nTitle: {movie_record['title']}")
         print(f"Description: {movie_record['description']}")
 
-    print(f"\nNierekomendowane tytuły dla użytkownika {selected_user}:")
+    print(f"\nMovies not recommended for {selected_user}:")
     for movie_record in unrecom_with_desc:
         print(f"\nTitle: {movie_record['title']}")
         print(f"Description: {movie_record['description']}")
