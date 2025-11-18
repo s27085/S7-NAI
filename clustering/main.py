@@ -13,6 +13,26 @@ from scipy.spatial.distance import pdist, squareform
 
 UNSEEN_RATING = 0
 
+def get_user_index(users):
+
+    print("Dostępni użytkownicy:")
+    for i in range(len(users)):
+        print(f"#{i+1} {users[i]}")
+    print(f"Dla którego użytkownika chcesz uzyskać rekomendacje? (1-{len(users)})")
+
+    while True:
+        try:
+            user_input = input()
+            user_index = int(user_input) - 1
+            if 0 <= user_index < len(users):
+                selected_user = users[user_index]
+                break
+            else:
+                print(f"Niepoprawny numer. Wprowadź liczbę od 1 do {len(users)}.")
+        except ValueError:
+            print("Niepoprawny format. Wprowadź numer.")
+    return selected_user
+
 def extract_ratings(filename):
     try:
         if filename == "":
@@ -77,7 +97,7 @@ def visualize_clusters(matrix, labels, users):
     plt.show()
 
 
-def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_clusters=4, n_recommendations=5):
+def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_clusters=5, n_recommendations=5):
     
     matrix = get_user_matrix(ratings, users, titles)
     
@@ -102,6 +122,7 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_cl
     user_vector = matrix[target_index]
 
     unseen_titles_indices = [i for i, rating in enumerate(user_vector) if rating == UNSEEN_RATING]
+    print(f"Unseen movies: {unseen_titles_indices}")
 
     # Odrzucamy filmy, które nie były oceniane przez nikogo w klastrze
     avg_cluster_ratings = np.where(cluster_matrix.sum(axis=0) == 0, -1, avg_cluster_ratings)
@@ -111,25 +132,24 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_cl
 
     return ([ titles[i] for i in recs ], [ titles[i] for i in unrecs ])
 
-ratings = extract_ratings("ratings.csv")
 
-users = list(ratings.keys())
 
-titles = sorted({title for user_ratings in ratings.values() for title in user_ratings})
 
-#print list of users wioth their names and indices
-for i in range(len(users)):
-    print(f"#{i+1} {users[i]}")
-print(f"Dla którego użytkownika chcesz uzyskać rekomendacje? (1-{len(users)})")
-user_index = int(input()) - 1
-selected_user = users[user_index]
+if __name__ == "__main__":
+    ratings = extract_ratings("ratings.csv")
 
-recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, selected_user)
+    users = list(ratings.keys())
 
-print(f"Rekomendowane tytuły dla użytkownika {selected_user}:")
-for title in recommended_titles:
-    print(f"- {title}")
+    titles = sorted({title for user_ratings in ratings.values() for title in user_ratings})
 
-print(f"Nierekomendowane tytuły dla użytkownika {selected_user}:")
-for title in unrecommended_titles:
-    print(f"- {title}")
+    selected_user = get_user_index(users)
+
+    recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, selected_user)
+
+    print(f"Rekomendowane tytuły dla użytkownika {selected_user}:")
+    for title in recommended_titles:
+        print(f"- {title}")
+
+    print(f"Nierekomendowane tytuły dla użytkownika {selected_user}:")
+    for title in unrecommended_titles:
+        print(f"- {title}")
