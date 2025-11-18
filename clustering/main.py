@@ -167,7 +167,10 @@ def get_recommendations(ratings, users, titles, target_user, number_of_clusters=
     
     #Get only movies that were rated by at least one user in the cluster
     cluster_matrix = matrix[[users.index(user) for user in cluster_users]]
-    avg_cluster_ratings = cluster_matrix.mean(axis=0)
+
+    # Calculate average ratings for each movie in the cluster without considering UNSEEN_RATING
+    masked_cluster_matrix = np.ma.masked_equal(cluster_matrix, UNSEEN_RATING)
+    avg_cluster_ratings = masked_cluster_matrix.mean(axis=0)
     user_vector = matrix[target_user_index]
 
     unseen_titles_indices = [i for i, rating in enumerate(user_vector) if rating == UNSEEN_RATING]
@@ -175,7 +178,7 @@ def get_recommendations(ratings, users, titles, target_user, number_of_clusters=
     # Remove titles with no ratings in the cluster from recommendations
     avg_cluster_ratings = np.where(cluster_matrix.sum(axis=0) == 0, -1, avg_cluster_ratings)
     
-    recs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i], reverse=True)[:n_recommendations]
+    recs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i], reverse=True)[:10]
     unrecs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i])[:n_recommendations]
 
     return ([ titles[i] for i in recs ], [ titles[i] for i in unrecs ])
@@ -207,7 +210,7 @@ if __name__ == "__main__":
     for movie in unrecommended_titles:
         unrecom_with_desc.append(get_gemini_summary(movie))
 
-    print(f"Movies recommended for {selected_user}:\n")
+    print(f"Movies recommended for {selected_user}:")
     for movie_record in recom_with_desc:
         print(f"\nTitle: {movie_record['title']}")
         print(f"Description: {movie_record['description']}")
