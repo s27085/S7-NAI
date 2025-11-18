@@ -18,6 +18,12 @@ from google.genai.types import GenerationConfig, Tool
 
 UNSEEN_RATING = 0
 
+"""
+This script implements a movie recommendation system using K-means clustering.
+It requires a Gemini API key to be placed in a .env file as GEMINI_API_KEY,
+and a ratings.csv file to be present in the same directory.
+Run the script and input the user number when prompted to get recommendations.
+"""
 def get_gemini_summary(movie_title):
     load_dotenv()
     client = genai.Client() 
@@ -41,6 +47,9 @@ def get_gemini_summary(movie_title):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+"""
+Get user index from input
+"""
 def get_user_index(users):
 
     print("Dostępni użytkownicy:")
@@ -61,6 +70,9 @@ def get_user_index(users):
             print("Niepoprawny format. Wprowadź numer.")
     return selected_user
 
+"""
+Extract ratings from CSV file into a nested dictionary
+"""
 def extract_ratings(filename):
     try:
         if filename == "":
@@ -92,9 +104,15 @@ def extract_ratings(filename):
         print(f"Filename was not specified")
         return []
     
+"""
+Get user rating for a specific title
+"""
 def get_user_rating_of_title(ratings, user, title):
     return ratings.get(user, {}).get(title, UNSEEN_RATING)
 
+"""
+Create user-item matrix from ratings data
+"""
 def get_user_matrix(ratings, users, all_titles):
     user_vectors = []
     for user in users:
@@ -102,8 +120,10 @@ def get_user_matrix(ratings, users, all_titles):
         user_vectors.append(vector)
     return np.array(user_vectors)
 
+"""
+Visualize clusters using PCA, by reducing dimensions to 2D
+"""
 def visualize_clusters(matrix, labels, users):
-    # Redukujemy wymiar z N filmów -> 2D
     pca = PCA(n_components=2)
     reduced = pca.fit_transform(matrix)
 
@@ -113,7 +133,6 @@ def visualize_clusters(matrix, labels, users):
     plt.figure(figsize=(10, 7))
     scatter = plt.scatter(x, y, c=labels, s=100)
 
-    # Opisujemy punkty nazwami użytkowników
     for i, user in enumerate(users):
         plt.text(x[i] + 0.01, y[i] + 0.01, user, fontsize=9)
 
@@ -124,35 +143,37 @@ def visualize_clusters(matrix, labels, users):
     plt.grid(True)
     plt.show()
 
-
-def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_clusters=5, n_recommendations=5):
+"""
+Get movie recommendations for a target user
+"""
+def get_recommendations(ratings, users, titles, target_user, number_of_clusters=5, n_recommendations=5):
     
     matrix = get_user_matrix(ratings, users, titles)
     
     pearson_distances = pdist(matrix, metric='correlation')
     distance_matrix = squareform(pearson_distances) 
 
-    # 3. Clustering with K-Medoids using the pre-computed distance matrix
+    # Clustering with K-Medoids using the pre-computed distance matrix
     # KMedoids must be told the matrix is pre-computed using metric='precomputed'
-    kmedoids = KMedoids(n_clusters=number_of_clusters, metric='precomputed', random_state=69)
+    kmedoids = KMedoids(n_clusters=number_of_clusters, metric='precomputed')
     labels = kmedoids.fit_predict(distance_matrix)
 
-    # visualize_clusters(matrix, labels, users)
+    visualize_clusters(matrix, labels, users)
     
-    target_index = users.index(target_user)
-    target_cluster = labels[target_index]
+    target_user_index = users.index(target_user)
+    target_cluster = labels[target_user_index]
     
     cluster_users = [users[i] for i, label in enumerate(labels) if label == target_cluster]
     
-    #get only movies that were rated by at least one user in the cluster
+    #Get only movies that were rated by at least one user in the cluster
     cluster_matrix = matrix[[users.index(user) for user in cluster_users]]
     avg_cluster_ratings = cluster_matrix.mean(axis=0)
-    user_vector = matrix[target_index]
+    user_vector = matrix[target_user_index]
 
     unseen_titles_indices = [i for i, rating in enumerate(user_vector) if rating == UNSEEN_RATING]
     print(f"Unseen movies: {unseen_titles_indices}")
 
-    # Odrzucamy filmy, które nie były oceniane przez nikogo w klastrze
+    # Remove titles with no ratings in the cluster from recommendations
     avg_cluster_ratings = np.where(cluster_matrix.sum(axis=0) == 0, -1, avg_cluster_ratings)
     
     recs = sorted(unseen_titles_indices, key=lambda i: avg_cluster_ratings[i], reverse=True)[:n_recommendations]
@@ -162,7 +183,9 @@ def get_recommendations_kmeans(ratings, users, titles, target_user, number_of_cl
 
 
 
-
+"""
+Main execution block
+"""
 if __name__ == "__main__":
     load_dotenv()
 
@@ -174,7 +197,7 @@ if __name__ == "__main__":
 
     selected_user = get_user_index(users)
 
-    recommended_titles, unrecommended_titles = get_recommendations_kmeans(ratings, users, titles, selected_user)
+    recommended_titles, unrecommended_titles = get_recommendations(ratings, users, titles, selected_user)
 
     recom_with_desc = []
     unrecom_with_desc = []
