@@ -1,3 +1,7 @@
+#Objective: Implement decision tree and support vector methods clustering algorithms on a sonar readings dataset
+#Authors: Fabian Fetter, Konrad Fijałkowski
+#Requirements: run with CLI from the same directory where data.csv is present
+
 import pandas as pd
 from sklearn import tree
 
