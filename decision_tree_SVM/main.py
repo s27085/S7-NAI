@@ -4,7 +4,7 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 from sklearn import tree
 from sklearn import svm
 import numpy as np
@@ -13,7 +13,9 @@ from sklearn.calibration import LabelEncoder
 MINE = 0
 ROCK = 1
 DATA_FILENAME = 'data.csv'
-VISUALIZE_TREES = 1
+VISUALIZE_TREES = 0
+PRINT_REPORT = 0
+SAMPLE_ROW_INDEX = 11
 
 def read_sonar_data():
     data_file = pd.read_csv(filepath_or_buffer=DATA_FILENAME, decimal=".", delimiter=",")
@@ -78,25 +80,52 @@ def visualize_svm_decision_boundary(clf, sample_features, class_labels):
     plt.ylabel(f"Feature {j}")
     plt.show()
 
-def SVM(sample_features, class_labels, visualize_tree, kernel_func='linear'):
-    clf = svm.SVC(probability=True, kernel=kernel_func)
-    clf.fit(sample_features, class_labels)
+def algorithm_metrics(clf, sample_features, true_labels):
+    predict = clf.predict(sample_features)
+    accuracy_dt = accuracy_score(predict, true_labels)
+    print(f"- Accuracy : {accuracy_dt:.4f}")
 
-    single_row = sample_features.iloc[[117]]
-    result = clf.predict_proba(single_row)
-    print(f"SVM ({kernel_func} kernel) Predicted probabilities for first sample row: Mine: {result[0][MINE]*100:.2f}%, Rock: {result[0][ROCK]*100:.2f}%")
-    if kernel_func in ['linear']:
-        visualize_svm_decision_boundary(clf, sample_features, class_labels) if visualize_tree else None
+    print("\n- Classification report:")
+    print(classification_report(predict, true_labels, target_names=['M', 'R']))
+
+    print("\n- Confusion Matrix:")
+    cm_dt = confusion_matrix(predict, true_labels)
+    cm_df_dt = pd.DataFrame(cm_dt, index=['Real M', 'Real R'], columns=['Predicted M', 'Predicted R'])
+    print(cm_df_dt)
+
+def SVM(sample_features, class_labels, visualize_tree, kernel_func='linear'):
+    clf = svm.SVC(probability=True, kernel=kernel_func, )
+    clf.fit(sample_features, class_labels)
+    if kernel_func in ['linear'] and visualize_tree:
+        visualize_svm_decision_boundary(clf, sample_features, class_labels)
+    
+    if PRINT_REPORT:
+        print(f'\nSVM with {kernel_func} kernel:')
+        algorithm_metrics(clf, sample_features, class_labels)
+
+    print(f'\nSVM with {kernel_func} kernel:')
+    print_sample_row(clf, sample_features)
+    
+    
 
 
 def decision_tree(sample_features, class_labels, visualize_tree):
     clf = tree.DecisionTreeClassifier()
     clf.fit(sample_features, class_labels)
-    visualize_decision_tree(clf) if visualize_tree else None
-    single_row = sample_features.iloc[[117]]
     
-    result = clf.predict_proba(single_row)
-    print(f"DT Predicted probabilities for first sample row: Mine: {result[0][MINE]*100:.2f}%, Rock: {result[0][ROCK]*100:.2f}%")
+    visualize_decision_tree(clf) if visualize_tree else None
+    if PRINT_REPORT:
+        print('\nDecision Tree:')
+        algorithm_metrics(clf, sample_features, class_labels)
+
+    print('\nDecision Tree:')
+    print_sample_row(clf, sample_features)
+
+def print_sample_row(clf, sample_features):
+    single_row_from_features = sample_features.iloc[[SAMPLE_ROW_INDEX]]
+    print(f'Prediction for sample {SAMPLE_ROW_INDEX+1}: {clf.predict(single_row_from_features)[0]}')
+    print(f'Prediction probabilities for sample {SAMPLE_ROW_INDEX+1}: {clf.predict_proba(single_row_from_features)}')
+
 
 if __name__ == "__main__":
     sample_features, class_labels = read_sonar_data()

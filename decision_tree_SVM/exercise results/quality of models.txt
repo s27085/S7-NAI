@@ -1,0 +1,95 @@
+
+Decision Tree:
+- Accuracy : 1.0000
+
+- Classification report:
+              precision    recall  f1-score   support
+
+           M       1.00      1.00      1.00       111
+           R       1.00      1.00      1.00        96
+
+    accuracy                           1.00       207
+   macro avg       1.00      1.00      1.00       207
+weighted avg       1.00      1.00      1.00       207
+
+
+- Confusion Matrix:
+        Predicted M  Predicted R
+Real M          111            0
+Real R            0           96
+
+SVM with linear kernel:
+- Accuracy : 0.8454
+
+- Classification report:
+              precision    recall  f1-score   support
+
+           M       0.91      0.82      0.86       123
+           R       0.77      0.88      0.82        84
+
+    accuracy                           0.85       207
+   macro avg       0.84      0.85      0.84       207
+weighted avg       0.85      0.85      0.85       207
+
+
+- Confusion Matrix:
+        Predicted M  Predicted R
+Real M          101           22
+Real R           10           74
+
+SVM with rbf kernel:
+- Accuracy : 0.8792
+
+- Classification report:
+              precision    recall  f1-score   support
+
+           M       0.96      0.84      0.90       128
+           R       0.78      0.95      0.86        79
+
+    accuracy                           0.88       207
+   macro avg       0.87      0.89      0.88       207
+weighted avg       0.89      0.88      0.88       207
+
+
+- Confusion Matrix:
+        Predicted M  Predicted R
+Real M          107           21
+Real R            4           75
+
+SVM with poly kernel:
+- Accuracy : 0.9372
+
+- Classification report:
+              precision    recall  f1-score   support
+
+           M       0.95      0.94      0.94       112
+           R       0.93      0.94      0.93        95
+
+    accuracy                           0.94       207
+   macro avg       0.94      0.94      0.94       207
+weighted avg       0.94      0.94      0.94       207
+
+
+- Confusion Matrix:
+        Predicted M  Predicted R
+Real M          105            7
+Real R            6           89
+
+SVM with sigmoid kernel:
+- Accuracy : 0.6232
+
+- Classification report:
+              precision    recall  f1-score   support
+
+           M       0.82      0.61      0.70       149
+           R       0.40      0.66      0.49        58
+
+    accuracy                           0.62       207
+   macro avg       0.61      0.63      0.60       207
+weighted avg       0.70      0.62      0.64       207
+
+
+- Confusion Matrix:
+        Predicted M  Predicted R
+Real M           91           58
+Real R           20           38
