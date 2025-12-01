@@ -21,6 +21,6 @@ Repository for projects created during Artificial Intelligence Tool module on a 
 
   Implementation of clustering algorithms (K-Means) in Python to recommend movies based on user ratings.
 
-- NAI 03 - 22.11.2025 - _decision tree and SVM_
+- NAI 04 - 22.11.2025 - _decision tree and SVM_
 
   Study and comparison of decision tree and SVM algorithms on [sonar readings data](https://machinelearningmastery.com/standard-machine-learning-datasets/).
