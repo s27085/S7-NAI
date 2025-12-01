@@ -17,6 +17,10 @@ Repository for projects created during Artificial Intelligence Tool module on a 
 
   JS script to hook into the dino game in Chrome browser and use fuzzy logic to control the dino and avoid obstacles.
 
-- NAI 03 - 14.11.2025 - _clustering_
+- NAI 03 - 08.11.2025 - _clustering_
 
   Implementation of clustering algorithms (K-Means) in Python to recommend movies based on user ratings.
+
+- NAI 03 - 22.11.2025 - _decision tree and SVM_
+
+  Study and comparison of decision tree and SVM algorithms on [sonar readings data](https://machinelearningmastery.com/standard-machine-learning-datasets/).
