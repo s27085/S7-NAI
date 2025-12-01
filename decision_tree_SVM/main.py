@@ -1,6 +1,26 @@
-#Objective: Implement decision tree and support vector methods clustering algorithms on a sonar readings dataset
-#Authors: Fabian Fetter, Konrad Fijałkowski
-#Requirements: run with CLI from the same directory where data.csv is present
+"""
+This script implements decision tree and support vector machine (SVM) algorithms for clustering sonar readings data. 
+It includes functionalities for data visualization, algorithm metrics evaluation, and prediction analysis.
+
+Authors:
+- Fabian Fetter
+- Konrad Fijałkowski
+
+Objective:
+- Implement decision tree and SVM algorithms on a sonar readings dataset.
+
+Requirements:
+- The script should be run from the command line in the same directory where the `data.csv
+
+Constants:
+- MINE, ROCK: Class labels for the dataset.
+- DATA_FILENAME: Name of the CSV file containing the dataset.
+- VISUALIZE_TREES, PRINT_REPORT: Flags for visualization and report printing.
+- SAMPLE_ROW_INDEX: Index of the sample row for prediction analysis.
+
+Usage:
+Run the script from the command line in the same directory as the `data.csv` file. 
+"""
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -18,6 +38,14 @@ PRINT_REPORT = 0
 SAMPLE_ROW_INDEX = 11
 
 def read_sonar_data():
+    """
+    Reads sonar data from a CSV file and separates it into features and labels.
+
+    Returns:
+        tuple: A tuple containing:
+            - features (DataFrame): The feature set excluding the last column.
+            - labels (Series): The label set from the last column.
+    """
     data_file = pd.read_csv(filepath_or_buffer=DATA_FILENAME, decimal=".", delimiter=",")
     features = data_file.iloc[:, :-1] #read everything except last column
     labels = data_file.iloc[:, -1] # read only the last column
@@ -25,6 +53,12 @@ def read_sonar_data():
 
 
 def visualize_decision_tree(prediction):
+    """
+    Visualizes a decision tree classifier.
+
+    Args:
+        prediction (DecisionTreeClassifier): The trained decision tree classifier to visualize.
+    """
     
     plt.figure(figsize=(25, 10))
     tree.plot_tree(prediction, 
@@ -36,6 +70,14 @@ def visualize_decision_tree(prediction):
     plt.show()
 
 def visualize_svm_decision_boundary(clf, sample_features, class_labels):
+    """
+    Visualizes the decision boundary of an SVM classifier for the two most important features.
+
+    Args:
+        clf (SVC): The trained SVM classifier.
+        sample_features (DataFrame): The feature set used for training.
+        class_labels (Series): The class labels corresponding to the feature set.
+    """
 
     coefs = np.abs(clf.coef_[0])
     top_2_indices = np.argsort(coefs)[-2:][::-1] 
@@ -81,6 +123,14 @@ def visualize_svm_decision_boundary(clf, sample_features, class_labels):
     plt.show()
 
 def algorithm_metrics(clf, sample_features, true_labels):
+    """
+    Computes and displays accuracy, classification report, and confusion matrix for a classifier.
+
+    Args:
+        clf (Classifier): The trained classifier.
+        sample_features (DataFrame): The feature set used for predictions.
+        true_labels (Series): The true class labels for the feature set.
+    """
     predict = clf.predict(sample_features)
     accuracy_dt = accuracy_score(predict, true_labels)
     print(f"- Accuracy : {accuracy_dt:.4f}")
@@ -94,6 +144,15 @@ def algorithm_metrics(clf, sample_features, true_labels):
     print(cm_df_dt)
 
 def SVM(sample_features, class_labels, visualize_tree, kernel_func='linear'):
+    """
+    Implements SVM classification with the specified kernel function.
+
+    Args:
+        sample_features (DataFrame): The feature set used for training.
+        class_labels (Series): The class labels corresponding to the feature set.
+        visualize_tree (bool): Flag to visualize the decision boundary for linear kernel.
+        kernel_func (str): The kernel function to use ('linear', 'rbf', 'poly', 'sigmoid').
+    """
     clf = svm.SVC(probability=True, kernel=kernel_func, )
     clf.fit(sample_features, class_labels)
     if kernel_func in ['linear'] and visualize_tree:
@@ -110,6 +169,14 @@ def SVM(sample_features, class_labels, visualize_tree, kernel_func='linear'):
 
 
 def decision_tree(sample_features, class_labels, visualize_tree):
+    """
+    Implements decision tree classification and optionally visualizes the tree.
+
+    Args:
+        sample_features (DataFrame): The feature set used for training.
+        class_labels (Series): The class labels corresponding to the feature set.
+        visualize_tree (bool): Flag to visualize the decision tree.
+    """
     clf = tree.DecisionTreeClassifier()
     clf.fit(sample_features, class_labels)
     
@@ -122,6 +189,13 @@ def decision_tree(sample_features, class_labels, visualize_tree):
     print_sample_row(clf, sample_features)
 
 def print_sample_row(clf, sample_features):
+    """
+    Prints predictions and probabilities for a specific sample row.
+
+    Args:
+        clf (Classifier): The trained classifier.
+        sample_features (DataFrame): The feature set containing the sample row.
+    """
     single_row_from_features = sample_features.iloc[[SAMPLE_ROW_INDEX]]
     print(f'Prediction for sample {SAMPLE_ROW_INDEX+1}: {clf.predict(single_row_from_features)[0]}')
     print(f'Prediction probabilities for sample {SAMPLE_ROW_INDEX+1}: {clf.predict_proba(single_row_from_features)}')
