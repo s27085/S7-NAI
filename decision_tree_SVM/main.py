@@ -20,6 +20,9 @@ Constants:
 
 Usage:
 Run the script from the command line in the same directory as the `data.csv` file. 
+
+Other example of data:
+https://raw.githubusercontent.com/MachineLearningBCAM/Datasets/refs/heads/main/data/multi_class_datasets/vehicle.csv
 """
 
 import matplotlib.pyplot as plt
