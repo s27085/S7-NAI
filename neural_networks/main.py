@@ -106,7 +106,7 @@ class FashionMnist(Classifier):
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(28, 28)),
+                tf.keras.layers.InputLayer(shape=(28, 28)),
                 tf.keras.layers.Flatten(),
                 tf.keras.layers.Dense(128, activation="relu"),
                 tf.keras.layers.Dense(10, activation="softmax"),
@@ -150,7 +150,7 @@ class Cifar10(Classifier):
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(32, 32, 3)),
+                tf.keras.layers.InputLayer(shape=(32, 32, 3)),
                 tf.keras.layers.Conv2D(32, (3, 3), activation="relu"),
                 tf.keras.layers.MaxPooling2D((2, 2)),  # scaling down 2x
                 tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
@@ -201,7 +201,7 @@ class Sonar(Classifier):
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(60,)),
+                tf.keras.layers.InputLayer(shape=(60,)),
                 tf.keras.layers.Dense(60, activation="relu"),
                 tf.keras.layers.Dense(30, activation="relu"),
                 tf.keras.layers.Dense(15, activation="relu"),
@@ -282,7 +282,7 @@ class Ecoli(Classifier):
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.InputLayer(input_shape=(self.num_features,)),
+                tf.keras.layers.InputLayer(shape=(self.num_features,)),
                 tf.keras.layers.Dense(32, activation="relu"),
                 tf.keras.layers.Dense(16, activation="relu"),
                 tf.keras.layers.Dense(self.num_classes, activation="softmax"),
