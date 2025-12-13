@@ -29,7 +29,7 @@ class Classifier:
         if self.model is None or self.x_train is None or self.x_test is None:
             raise ValueError("Model or data not properly initialized.")
 
-    def train(self, epochs=5, **fit_kwargs):
+    def train(self, epochs=5, validate_data=False, **fit_kwargs):
         """Train the classifier on the prepared dataset."""
         self._ensure_model_ready()
         if self.x_train is None or self.y_train is None:
@@ -38,6 +38,7 @@ class Classifier:
             self.x_train,
             self.y_train,
             epochs=epochs,
+            validation_data=(self.x_test, self.y_test) if validate_data else None,
             **fit_kwargs,
         )
 
@@ -74,6 +75,45 @@ class Classifier:
             plt.colorbar()
             plt.show()
         return guessed_class, prediction
+
+    def show_confusion_matrix(self):
+        self._ensure_model_ready()
+
+        predictions = self.model.predict(self.x_test, verbose=0)
+        predicted_classes = np.argmax(predictions, axis=1)
+        true_classes = self.y_test
+
+        cm = tf.math.confusion_matrix(
+            labels=true_classes, predictions=predicted_classes
+        ).numpy()
+
+        plt.figure(figsize=(8, 8))
+
+        plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+        plt.title("Confusion Matrix")
+        plt.colorbar()
+
+        tick_marks = np.arange(len(self.class_names))
+        plt.xticks(tick_marks, self.class_names, rotation=45)
+        plt.yticks(tick_marks, self.class_names)
+
+        plt.ylabel("True Label")
+        plt.xlabel("Predicted Label")
+
+        thresh = cm.max() / 2.0
+
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                plt.text(
+                    j,
+                    i,
+                    format(cm[i, j], "d"),
+                    horizontalalignment="center",
+                    color="white" if cm[i, j] > thresh else "black",
+                )
+
+        plt.tight_layout()
+        plt.show()
 
 
 class FashionMnist(Classifier):
@@ -150,14 +190,36 @@ class Cifar10(Classifier):
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
-                tf.keras.layers.InputLayer(shape=(32, 32, 3)),
-                tf.keras.layers.Conv2D(32, (3, 3), activation="relu"),
-                tf.keras.layers.MaxPooling2D((2, 2)),  # scaling down 2x
-                tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
-                tf.keras.layers.MaxPooling2D((2, 2)),  # scaling down 2x
-                tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
-                tf.keras.layers.Flatten(),  # Flatten to 1D
-                tf.keras.layers.Dense(64, activation="relu"),
+                tf.keras.layers.Input(shape=(32, 32, 3)),
+                tf.keras.layers.Flatten(),  # Spłaszczamy od razu (gubimy przestrzeń)
+                tf.keras.layers.Dense(
+                    64, activation="relu"
+                ),  # Tylko 64 neurony myślenia
+                tf.keras.layers.Dense(10, activation="softmax"),
+            ]
+        )
+
+        self.model.compile(
+            optimizer="adam",
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+            metrics=["accuracy"],
+        )
+
+
+class DeepCifar10(Cifar10):
+    def setup_model(self):
+        self.model = tf.keras.models.Sequential(
+            [
+                tf.keras.layers.Input(shape=(32, 32, 3)),
+                tf.keras.layers.Conv2D(32, (3, 3), activation="relu", padding="same"),
+                tf.keras.layers.MaxPooling2D((2, 2)),
+                tf.keras.layers.Conv2D(64, (3, 3), activation="relu", padding="same"),
+                tf.keras.layers.MaxPooling2D((2, 2)),
+                tf.keras.layers.Conv2D(128, (3, 3), activation="relu", padding="same"),
+                tf.keras.layers.MaxPooling2D((2, 2)),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(128, activation="relu"),
+                tf.keras.layers.Dropout(0.3),  # Ochrona przed przeuczeniem
                 tf.keras.layers.Dense(10, activation="softmax"),
             ]
         )
@@ -332,9 +394,52 @@ class Ecoli(Classifier):
         return guessed_class, prediction
 
 
+def setup_classifier(c, epochs=5):
+    c.setup_model()
+    c.load_data()
+    c.train(epochs=epochs)
+    return c
+
+
+def compare_classifiers(c1: Classifier, c2: Classifier, c1_epochs=5, c2_epochs=5):
+    histories = {}
+
+    c1_time = tf.timestamp()
+    c1.load_data()
+    c1.setup_model()
+    hist_c1 = c1.train(c1_epochs, True, verbose=1).history
+    c1_time = tf.timestamp() - c1_time
+    histories["c1"] = hist_c1
+
+    c2_time = tf.timestamp()
+    c2.load_data()
+    c2.setup_model()
+    hist_c2 = c2.train(c2_epochs, True, verbose=1).history
+    c2_time = tf.timestamp() - c2_time
+    histories["c2"] = hist_c2
+
+    plt.figure(figsize=(10, 5))
+
+    plt.plot(
+        histories["c1"]["val_accuracy"],
+        linestyle="--",
+        label="Model" + type(c1).__name__,
+        color="red",
+    )
+    plt.plot(
+        histories["c2"]["val_accuracy"], label="Model" + type(c2).__name__, color="blue"
+    )
+
+    plt.title(
+        f"Accuracy comparison: Model {type(c1).__name__} (time: {c1_time:.2f}s) vs Model {type(c2).__name__} (time: {c2_time:.2f}s)"
+    )
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == "__main__":
-    classifier = Cifar10()
-    classifier.setup_model()
-    classifier.train(epochs=5)
-    classifier.evaluate()
-    classifier.predict(index=7)
+    compare_classifiers(Cifar10(), DeepCifar10(), c1_epochs=25, c2_epochs=5)
