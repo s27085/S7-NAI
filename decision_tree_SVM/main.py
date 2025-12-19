@@ -27,7 +27,7 @@ https://raw.githubusercontent.com/MachineLearningBCAM/Datasets/refs/heads/main/d
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, ConfusionMatrixDisplay
 from sklearn import tree
 from sklearn import svm
 import numpy as np
@@ -42,17 +42,31 @@ SAMPLE_ROW_INDEX = 11
 
 def read_sonar_data():
     """
-    Reads sonar data from a CSV file and separates it into features and labels.
-
-    Returns:
-        tuple: A tuple containing:
-            - features (DataFrame): The feature set excluding the last column.
-            - labels (Series): The label set from the last column.
+    Reads, shuffles, encodes, and splits sonar data manually.
+    Returns: x_train, x_test, y_train, y_test, class_names
     """
-    data_file = pd.read_csv(filepath_or_buffer=DATA_FILENAME, decimal=".", delimiter=",")
-    features = data_file.iloc[:, :-1] #read everything except last column
-    labels = data_file.iloc[:, -1] # read only the last column
-    return features, labels
+    df = pd.read_csv(DATA_FILENAME, header=None)
+    
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    y_column = df.iloc[:, -1]
+    unique_classes = sorted(y_column.unique())
+    label_map = {name: i for i, name in enumerate(unique_classes)}
+    df.iloc[:, -1] = df.iloc[:, -1].map(label_map)
+
+    all_x = df.iloc[:, :-1].values.astype("float32")
+    all_y = df.iloc[:, -1].values.astype("int32")
+
+    num_samples = len(df)
+    train_size = int(0.8 * num_samples)
+
+    x_train = all_x[:train_size]
+    y_train = all_y[:train_size]
+
+    x_test = all_x[train_size:]
+    y_test = all_y[train_size:]
+    
+    return x_train, x_test, y_train, y_test, unique_classes
 
 
 def visualize_decision_tree(prediction):
@@ -146,30 +160,44 @@ def algorithm_metrics(clf, sample_features, true_labels):
     cm_df_dt = pd.DataFrame(cm_dt, index=['Real M', 'Real R'], columns=['Predicted M', 'Predicted R'])
     print(cm_df_dt)
 
-def SVM(sample_features, class_labels, visualize_tree, kernel_func='linear'):
+def SVM(x_train, x_test, y_train, y_test, class_names, kernel_func='linear'):
     """
-    Implements SVM classification with the specified kernel function.
+    Trains and evaluates a Support Vector Machine (SVM) classifier.
 
-    Args:
-        sample_features (DataFrame): The feature set used for training.
-        class_labels (Series): The class labels corresponding to the feature set.
-        visualize_tree (bool): Flag to visualize the decision boundary for linear kernel.
-        kernel_func (str): The kernel function to use ('linear', 'rbf', 'poly', 'sigmoid').
+    This function fits an SVM model on the training data, optionally visualizes 
+    decision boundaries (if linear) or confusion matrices (if poly), and 
+    prints performance metrics on the test set.
     """
-    clf = svm.SVC(probability=True, kernel=kernel_func, )
-    clf.fit(sample_features, class_labels)
-    if kernel_func in ['linear'] and visualize_tree:
-        visualize_svm_decision_boundary(clf, sample_features, class_labels)
+
+    clf = svm.SVC(probability=True, kernel=kernel_func)
+    clf.fit(x_train, y_train)
+
+    if kernel_func == 'linear' and visualize_tree:
+        visualize_svm_decision_boundary(clf, x_train, y_train)
+
+    if kernel_func == 'poly':
+        visualize_confusion_matrix(clf, x_test, y_test, class_names)
     
     if PRINT_REPORT:
         print(f'\nSVM with {kernel_func} kernel:')
-        algorithm_metrics(clf, sample_features, class_labels)
+        algorithm_metrics(clf, x_test, y_test, class_names)
 
     print(f'\nSVM with {kernel_func} kernel:')
-    print_sample_row(clf, sample_features)
+    print_sample_row(clf, x_test)
     
     
-
+def visualize_confusion_matrix(clf, x_test, y_test, class_names):
+    """
+    Generates and plots the confusion matrix for the provided classifier using test data.
+    """
+    predictions = clf.predict(x_test)
+    cm = confusion_matrix(y_test, predictions)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    
+    plt.figure(figsize=(8, 6))
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix - SVM (poly) for sonar testing set")
+    plt.show()
 
 def decision_tree(sample_features, class_labels, visualize_tree):
     """
@@ -205,11 +233,12 @@ def print_sample_row(clf, sample_features):
 
 
 if __name__ == "__main__":
-    sample_features, class_labels = read_sonar_data()
+    x_train, x_test, y_train, y_test, class_names = read_sonar_data()
 
-    decision_tree(sample_features, class_labels, visualize_tree=VISUALIZE_TREES)
-    SVM(sample_features, class_labels, visualize_tree=VISUALIZE_TREES, kernel_func='linear')
-    SVM(sample_features, class_labels, visualize_tree=VISUALIZE_TREES, kernel_func='rbf')
-    SVM(sample_features, class_labels, visualize_tree=VISUALIZE_TREES, kernel_func='poly')
-    SVM(sample_features, class_labels, visualize_tree=VISUALIZE_TREES, kernel_func='sigmoid')
+    print(f"Training Data: {x_train.shape}")
+    print(f"Test Data: {x_test.shape}")
+    print(f"Classes: {class_names}")
+
+    # decision_tree(x_train, x_test, y_train, y_test, class_names, visualize_tree=VISUALIZE_TREES)
+    SVM(x_train, x_test, y_train, y_test, class_names, kernel_func='poly')
 
