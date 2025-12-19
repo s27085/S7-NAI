@@ -24,3 +24,7 @@ Repository for projects created during Artificial Intelligence Tool module on a 
 - NAI 04 - 22.11.2025 - _decision tree and SVM_
 
   Study and comparison of decision tree and SVM algorithms on [sonar readings data](https://machinelearningmastery.com/standard-machine-learning-datasets/).
+
+- NAI 05 - 06.12.2025 - _neural networks_
+
+  Classify Cifar10, FashionMnist, ecoli protein designation and sonar readings datasets using TensorFlow.
