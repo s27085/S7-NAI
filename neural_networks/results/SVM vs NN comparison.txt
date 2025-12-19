@@ -1,0 +1,4 @@
+Model SVM z jądrem poly radzi sobie znacznie lepiej z tym zadaniem niż zaprezentowana sieć neuronowa.
+SVM jest bardziej zrównoważony, podczas gdy sieć neuronowa ma wyraźny problem z poprawną klasyfikacją skał (R). NN ma problem z klasyfikacją min (M), jest przetrenowany i myli je z skałami.
+
+Redukcja liczby neuronów w warstwach ReLu bądź dodanie wartwy Dropout mogłyby poprawić jakość klasyfikacji na tym, relatywnie małbym, zbiorze danych.

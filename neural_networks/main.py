@@ -1,3 +1,23 @@
+"""
+This script implements TensoFlow neural networks for clustering Cifar10, FashionMnist and sonar readings datasets. 
+It includes functionalities for data visualization, algorithm metrics evaluation, and prediction analysis.
+
+Authors:
+- Fabian Fetter
+- Konrad Fijałkowski
+
+Usage:
+Run the script from the command line in the same directory as the main.py file. 
+
+Dataset sources:
+- Ecoli: https://github.com/MachineLearningBCAM/Datasets/tree/main
+- fashion MNIST: https://www.tensorflow.org/tutorials/keras/classification
+- CIFAR10: https://www.tensorflow.org/datasets/catalog/cifar10
+- sonar readings: https://machinelearningmastery.com/standard-machine-learning-datasets/ 
+
+This project is built using TensorFlow (https://www.tensorflow.org/) licensed under the Apache License, Version 2.0.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -5,6 +25,15 @@ import tensorflow as tf
 
 
 class Classifier:
+    """
+    A base class for building, training, and evaluating TensorFlow neural network models.
+
+    This class serves as a template for specific dataset classifiers. It handles 
+    common boilerplate operations such as checking model readiness, training loops, 
+    evaluation, prediction, and visualization of confusion matrices. 
+
+    Subclasses are expected to implement `setup_model` and `load_data`.
+    """
     def __init__(self):
         self.model = None
         self.x_train = None
@@ -42,17 +71,6 @@ class Classifier:
             **fit_kwargs,
         )
 
-    def evaluate(self, **eval_kwargs):
-        """Run evaluation against the holdout dataset."""
-        self._ensure_model_ready()
-        if self.x_test is None or self.y_test is None:
-            raise ValueError("Evaluation data not initialized.")
-        return self.model.evaluate(
-            self.x_test,
-            self.y_test,
-            **eval_kwargs,
-        )
-
     def predict(self, index, show_plot=True):
         """Produce predictions for given input data."""
         self._ensure_model_ready()
@@ -76,7 +94,10 @@ class Classifier:
             plt.show()
         return guessed_class, prediction
 
-    def show_confusion_matrix(self):
+    def show_confusion_matrix(self, title="Confusion Matrix"):
+        """
+        Generates and plots the confusion matrix for the provided classifier using test data.
+        """
         self._ensure_model_ready()
 
         predictions = self.model.predict(self.x_test, verbose=0)
@@ -111,12 +132,20 @@ class Classifier:
                     horizontalalignment="center",
                     color="white" if cm[i, j] > thresh else "black",
                 )
+        plt.title(title)
 
         plt.tight_layout()
         plt.show()
 
 
 class FashionMnist(Classifier):
+    """
+    A classifier for the Fashion MNIST dataset using a simple Feed-Forward Neural Network.
+
+    This class loads the standard Fashion MNIST dataset (grayscale images of clothing),
+    normalizes the pixel values to the 0-1 range, and trains a basic Multi-Layer 
+    Perceptron (MLP) with one hidden layer to classify the 10 categories.
+    """
     def __init__(self):
         super().__init__()
         self.class_names = [
@@ -160,6 +189,12 @@ class FashionMnist(Classifier):
 
 
 class Cifar10(Classifier):
+    """
+    A baseline classifier for the CIFAR-10 dataset using a Feed-Forward Neural Network.
+
+    This class flattens the 32x32x3 RGB images into 1D vectors and processes them through
+    a dense network.
+    """
     def __init__(self):
         super().__init__()
         self.class_names = [
@@ -191,22 +226,29 @@ class Cifar10(Classifier):
         self.model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Input(shape=(32, 32, 3)),
-                tf.keras.layers.Flatten(),  # Spłaszczamy od razu (gubimy przestrzeń)
+                tf.keras.layers.Flatten(),
                 tf.keras.layers.Dense(
-                    64, activation="relu"
-                ),  # Tylko 64 neurony myślenia
+                    64, activation="relu" #only 64 neurons for this layer
+                ), 
                 tf.keras.layers.Dense(10, activation="softmax"),
             ]
         )
 
         self.model.compile(
             optimizer="adam",
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+            loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
 
 
 class DeepCifar10(Cifar10):
+    """
+    An advanced classifier for the CIFAR-10 dataset using a Convolutional Neural Network (CNN).
+
+    Inherits from the `Cifar10` class but overrides `setup_model`. The Convolutional Neural Network (CNN) 
+    includes multiple Conv2D and MaxPooling2D layers, followed by Dropout for 
+    regularization, offering significantly higher accuracy than the base MLP model.
+    """
     def setup_model(self):
         self.model = tf.keras.models.Sequential(
             [
@@ -219,7 +261,7 @@ class DeepCifar10(Cifar10):
                 tf.keras.layers.MaxPooling2D((2, 2)),
                 tf.keras.layers.Flatten(),
                 tf.keras.layers.Dense(128, activation="relu"),
-                tf.keras.layers.Dropout(0.3),  # Ochrona przed przeuczeniem
+                tf.keras.layers.Dropout(0.3),  #overfitting protection
                 tf.keras.layers.Dense(10, activation="softmax"),
             ]
         )
@@ -232,6 +274,14 @@ class DeepCifar10(Cifar10):
 
 
 class Sonar(Classifier):
+    """
+    A binary classifier for the Sonar Mines vs. Rocks dataset.
+
+    This class processes sonar signal data loaded from a CSV file. It handles 
+    parsing the string labels ('M' for Mine, 'R' for Rock) into integer format,
+    performs an 80/20 train-test split, and trains a deep dense network to 
+    distinguish between the two classes.
+    """
     def __init__(self):
         super().__init__()
 
@@ -307,6 +357,14 @@ class Sonar(Classifier):
 
 
 class Ecoli(Classifier):
+    """
+    A multi-class classifier for the Ecoli Protein Localization dataset.
+
+    This class handles the loading and preprocessing of biological data from a CSV.
+    It extracts 7 specific features (mcg, gvh, lip, etc.), maps text labels to 
+    integers, and trains a neural network to predict the cellular localization 
+    site of proteins.
+    """
     def __init__(self):
         super().__init__()
 
@@ -320,10 +378,9 @@ class Ecoli(Classifier):
         df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
         y_column = df.iloc[:, -1]
-        unique_classes = sorted(y_column.unique())
-        self.class_names = unique_classes
+        self.class_names = sorted(y_column.unique())
 
-        label_map = {name: i for i, name in enumerate(unique_classes)}
+        label_map = {name: i for i, name in enumerate(self.class_names)}
 
         df.iloc[:, -1] = df.iloc[:, -1].map(label_map)
 
@@ -331,7 +388,7 @@ class Ecoli(Classifier):
         all_y = df.iloc[:, -1].values.astype("int32")
 
         self.num_features = all_x.shape[1]
-        self.num_classes = len(unique_classes)
+        self.num_classes = len(self.class_names)
 
         train_size = int(0.8 * len(df))
 
@@ -395,6 +452,9 @@ class Ecoli(Classifier):
 
 
 def setup_classifier(c, epochs=5):
+    """
+    Define layers on the network, load dataset and train it for a number of times.
+    """
     c.setup_model()
     c.load_data()
     c.train(epochs=epochs)
@@ -402,19 +462,22 @@ def setup_classifier(c, epochs=5):
 
 
 def compare_classifiers(c1: Classifier, c2: Classifier, c1_epochs=5, c2_epochs=5):
+    """
+    Choose two classifiers and compare them using different number of training iterations
+    """
     histories = {}
 
     c1_time = tf.timestamp()
     c1.load_data()
     c1.setup_model()
-    hist_c1 = c1.train(c1_epochs, True, verbose=1).history
+    hist_c1 = c1.train(c1_epochs, validate_data=True, verbose=1).history
     c1_time = tf.timestamp() - c1_time
     histories["c1"] = hist_c1
 
     c2_time = tf.timestamp()
     c2.load_data()
     c2.setup_model()
-    hist_c2 = c2.train(c2_epochs, True, verbose=1).history
+    hist_c2 = c2.train(c2_epochs, validate_data=True, verbose=1).history
     c2_time = tf.timestamp() - c2_time
     histories["c2"] = hist_c2
 
@@ -427,7 +490,10 @@ def compare_classifiers(c1: Classifier, c2: Classifier, c1_epochs=5, c2_epochs=5
         color="red",
     )
     plt.plot(
-        histories["c2"]["val_accuracy"], label="Model" + type(c2).__name__, color="blue"
+        histories["c2"]["val_accuracy"],
+        linestyle="-",
+        label="Model" + type(c2).__name__,
+        color="blue"
     )
 
     plt.title(
@@ -442,4 +508,7 @@ def compare_classifiers(c1: Classifier, c2: Classifier, c1_epochs=5, c2_epochs=5
 
 
 if __name__ == "__main__":
-    compare_classifiers(Cifar10(), DeepCifar10(), c1_epochs=25, c2_epochs=5)
+    # compare_classifiers(Cifar10(), DeepCifar10(), c1_epochs=25, c2_epochs=5)
+
+    sonar = setup_classifier(Sonar())
+    sonar.show_confusion_matrix(title="Confusion matrix - NN for sonar testing set")
