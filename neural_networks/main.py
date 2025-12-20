@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+import seaborn as sns
+
 
 class Classifier:
     """
@@ -101,6 +103,7 @@ class Classifier:
         self._ensure_model_ready()
 
         predictions = self.model.predict(self.x_test, verbose=0)
+
         predicted_classes = np.argmax(predictions, axis=1)
         true_classes = self.y_test
 
@@ -110,31 +113,18 @@ class Classifier:
 
         plt.figure(figsize=(8, 8))
 
-        plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
-        plt.title("Confusion Matrix")
-        plt.colorbar()
+        sns.heatmap(cm, 
+                annot=True,
+                fmt='d',
+                cmap='Blues',
+                xticklabels=self.class_names, 
+                yticklabels=self.class_names)
 
-        tick_marks = np.arange(len(self.class_names))
-        plt.xticks(tick_marks, self.class_names, rotation=45)
-        plt.yticks(tick_marks, self.class_names)
-
+        plt.title(title)
         plt.ylabel("True Label")
         plt.xlabel("Predicted Label")
-
-        thresh = cm.max() / 2.0
-
-        for i in range(cm.shape[0]):
-            for j in range(cm.shape[1]):
-                plt.text(
-                    j,
-                    i,
-                    format(cm[i, j], "d"),
-                    horizontalalignment="center",
-                    color="white" if cm[i, j] > thresh else "black",
-                )
-        plt.title(title)
-
         plt.tight_layout()
+
         plt.show()
 
 
@@ -217,7 +207,7 @@ class Cifar10(Classifier):
         self.x_train = self.x_train / 255.0
         self.x_test = self.x_test / 255.0
 
-        # IMPORTANT: In CIFAR, labels are in a 2D array [[6], [9]...].
+        # In CIFAR, labels are in a 2D array [[6], [9]...].
         # We need to flatten them to [6, 9...] for convenience.
         self.y_train = self.y_train.flatten()
         self.y_test = self.y_test.flatten()
@@ -268,7 +258,7 @@ class DeepCifar10(Cifar10):
 
         self.model.compile(
             optimizer="adam",
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+            loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
 
@@ -512,3 +502,6 @@ if __name__ == "__main__":
 
     sonar = setup_classifier(Sonar())
     sonar.show_confusion_matrix(title="Confusion matrix - NN for sonar testing set")
+
+    fashion = setup_classifier(FashionMnist())
+    fashion.show_confusion_matrix(title="fashion")
