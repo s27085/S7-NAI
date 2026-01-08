@@ -28,3 +28,7 @@ Repository for projects created during Artificial Intelligence Tool module on a 
 - NAI 05 - 06.12.2025 - _neural networks_
 
   Classify Cifar10, FashionMnist, ecoli protein designation and sonar readings datasets using TensorFlow.
+
+- NAI 06 - 20.12.2025 - _computer vision_
+
+  Implement openCV libary to detect moving objects and draw graphical symbols in a video stream.
