@@ -32,3 +32,7 @@ Repository for projects created during Artificial Intelligence Tool module on a 
 - NAI 06 - 20.12.2025 - _computer vision_
 
   Implement openCV libary to detect moving objects and draw graphical symbols in a video stream.
+  
+- NAI 07 - 10.01.2026 - _reinforcement learning_
+
+  Train an AI agent using reinforcement learning and make it independently play video game
