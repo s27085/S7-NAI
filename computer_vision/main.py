@@ -17,7 +17,13 @@ import mediapipe as mp
 import math
 
 class MotionDetector:
+    """
+    A class to detect motion based on body pose estimation using MediaPipe.
+    """
     def __init__(self):
+        """
+        Initializes the MotionDetector with default settings.
+        """
         self.source_stream = 'motion.mov'
         self.previous_nose_position = None
         self.current_nose_position = None
@@ -27,10 +33,16 @@ class MotionDetector:
         self.processed_pose = None
 
     def quit_on_keypress(self, key):
+        """
+        Wait 20 miliseconds for a keypress
+        """
         if cv2.waitKey(20) == ord(key):
             exit()
 
     def draw_landmarks(self):
+        """
+        Draw found landsmarks on a body using MediaPipe.
+        """
         mp_pose = mp.solutions.pose
         mp_drawing = mp.solutions.drawing_utils 
 
@@ -41,10 +53,16 @@ class MotionDetector:
                 )
         
     def print_text_on_frame(self, text, font=cv2.FONT_HERSHEY_SIMPLEX, color=(255, 255, 255), thickness=3):
+        """
+        Put specified text onto the video stream.
+        """
         cv2.putText(self.frame, text, (50, 100), font, 2, color, thickness)
         
 
     def draw_crosshair_on_face(self, color=(0, 0, 255), thickness=3):
+        """
+        Create crosshair on target's face.
+        """
         h, w, _ = self.frame.shape
         ear = self.processed_pose.pose_landmarks.landmark[7]
         ear_x, ear_y = int(ear.x * w), int(ear.y * h)
@@ -62,6 +80,9 @@ class MotionDetector:
         cv2.line(self.frame, (nx - face_radius - tick_len, ny ), (nx - face_radius + tick_len, ny), color, thickness) #left
 
     def print_text_on_move(self):
+        """
+        Print text whenever target body moves in the video stream
+        """
         if self.previous_nose_position is not None:
             distance_between_frames = math.dist(self.previous_nose_position, self.current_nose_position)
 
@@ -72,6 +93,9 @@ class MotionDetector:
                 self.print_text_on_frame('HOLD', color=(0, 0, 255))
 
     def detect_motion(self):
+        """
+        Detect in a while loop if body on a video stream moved. Add pose landmarks and show output to an additional window.
+        """
         pose = mp.solutions.pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
         cap = cv2.VideoCapture(self.source_stream)
 
