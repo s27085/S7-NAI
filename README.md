@@ -35,4 +35,4 @@ Repository for projects created during Artificial Intelligence Tool module on a 
   
 - NAI 07 - 10.01.2026 - _reinforcement learning_
 
-  Train an AI agent using reinforcement learning and make it independently play video game
+  Train an AI agent using reinforcement learning and make it independently play BattleZone video game for Atari
